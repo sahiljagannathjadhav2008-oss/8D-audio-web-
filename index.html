@@ -1,51 +1,795 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>8D Audio Demo</title>
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>8D Audio Studio</title>
+
 <style>
-body{font-family:Arial;margin:0;background:#111;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh}
-.card{background:#1f1f1f;padding:20px;border-radius:14px;width:340px}
-button,input{width:100%;margin:8px 0}
-button{padding:12px;border:2px solid #4af;background:#222;color:#fff;border-radius:10px}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+
+background:#070b14;
+
+background-image:
+radial-gradient(circle at top,#14335e 0%,#070b14 60%);
+
+color:white;
+
+min-height:100vh;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+padding:25px;
+
+}
+
+.card{
+
+width:420px;
+
+max-width:100%;
+
+background:#111827;
+
+border:1px solid #2d3c55;
+
+border-radius:20px;
+
+padding:22px;
+
+box-shadow:
+0 0 25px rgba(0,170,255,.25);
+
+}
+
+h1{
+
+text-align:center;
+
+margin-bottom:18px;
+
+color:#66d9ff;
+
+}
+
+input[type=file]{
+
+width:100%;
+
+margin-top:12px;
+
+margin-bottom:18px;
+
+color:white;
+
+}
+
+.controls{
+
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+gap:12px;
+
+margin-bottom:20px;
+
+}
+
+button{
+
+padding:13px;
+
+background:#15263d;
+
+border:2px solid #37c8ff;
+
+color:white;
+
+border-radius:12px;
+
+cursor:pointer;
+
+transition:.25s;
+
+font-size:15px;
+
+}
+
+button:hover{
+
+transform:scale(1.04);
+
+background:#20446b;
+
+}
+
+.slider{
+
+margin-top:14px;
+
+}
+
+.slider label{
+
+display:flex;
+
+justify-content:space-between;
+
+margin-bottom:5px;
+
+font-size:14px;
+
+}
+
+input[type=range]{
+
+width:100%;
+
+}
+
+.status{
+
+margin-top:20px;
+
+text-align:center;
+
+color:#7de1ff;
+
+font-size:15px;
+
+}
+
+canvas{
+
+margin-top:20px;
+
+width:100%;
+
+height:90px;
+
+background:#0b111d;
+
+border-radius:12px;
+
+border:1px solid #20324d;
+
+}
+
+.footer{
+
+margin-top:15px;
+
+text-align:center;
+
+font-size:13px;
+
+color:#6e8aa9;
+
+}
+
 </style>
+
 </head>
+
 <body>
+
 <div class="card">
-<h2>8D Audio Demo</h2>
-<input id="file" type="file" accept="audio/*">
-<button onclick="playAudio()">Play</button>
-<button onclick="stopAudio()">Stop</button>
-<label>Pan Speed</label>
-<input id="speed" type="range" min="0.1" max="3" step="0.1" value="1">
+
+<h1>8D Audio Studio</h1>
+
+<input
+type="file"
+id="audioFile"
+accept="audio/*">
+
+<div class="controls">
+
+<button id="playBtn">
+
+▶ Play
+
+</button>
+
+<button id="pauseBtn">
+
+⏸ Pause
+
+</button>
+
+<button id="stopBtn">
+
+⏹ Stop
+
+</button>
+
+<button id="resumeBtn">
+
+⏵ Resume
+
+</button>
+
 </div>
+
+<div class="slider">
+
+<label>
+
+Pan Speed
+
+<span id="speedValue">
+
+1.0
+
+</span>
+
+</label>
+
+<input
+type="range"
+id="speed"
+min="0.1"
+max="5"
+step="0.1"
+value="1">
+
+</div>
+
+<div class="slider">
+
+<label>
+
+Pan Width
+
+<span id="widthValue">
+
+100%
+
+</span>
+
+</label>
+
+<input
+type="range"
+id="width"
+min="0"
+max="100"
+value="100">
+
+</div>
+
+<div class="slider">
+
+<label>
+
+Distance
+
+<span id="distanceValue">
+
+50%
+
+</span>
+
+</label>
+
+<input
+type="range"
+id="distance"
+min="0"
+max="100"
+value="50">
+
+</div>
+
+<div class="slider">
+
+<label>
+
+Reverb
+
+<span id="reverbValue">
+
+20%
+
+</span>
+
+</label>
+
+<input
+type="range"
+id="reverb"
+min="0"
+max="100"
+value="20">
+
+</div>
+
+<div class="slider">
+
+<label>
+
+Delay
+
+<span id="delayValue">
+
+10%
+
+</span>
+
+</label>
+
+<input
+type="range"
+id="delay"
+min="0"
+max="100"
+value="10">
+
+</div>
+
+<div class="status" id="status">
+
+Waiting for audio...
+
+</div>
+
+<canvas
+id="visualizer"
+width="800"
+height="180">
+
+</canvas>
+
+<div class="footer">
+
+GitHub Pages Ready • Web Audio API
+
+</div>
+
+</div>
+
 <script>
-const ctx=new (window.AudioContext||window.webkitAudioContext)();
-let src,pan,raf,start;
-async function playAudio(){
- if(src)return;
- const f=document.getElementById('file').files[0];
- if(!f){alert('Select an audio file');return;}
- const b=await f.arrayBuffer();
- const audio=await ctx.decodeAudioData(b);
- src=ctx.createBufferSource();
- src.buffer=audio;
- pan=ctx.createStereoPanner();
- src.connect(pan).connect(ctx.destination);
- start=ctx.currentTime;
- src.start();
- animate();
- src.onended=()=>cancelAnimationFrame(raf);
+
+const AudioContextClass =
+window.AudioContext ||
+window.webkitAudioContext;
+
+const ctx =
+new AudioContextClass();
+
+let source=null;
+
+let buffer=null;
+
+let gainNode;
+
+let panNode;
+
+let filterNode;
+
+let delayNode;
+
+let feedbackGain;
+
+let analyser;
+
+let animation;
+
+let startTime=0;
+
+let pausedAt=0;
+
+let playing=false;
+
+let paused=false;
+
+let orbit=0;
+
+const fileInput=
+document.getElementById("audioFile");
+
+const playBtn=
+document.getElementById("playBtn");
+
+const stopBtn=
+document.getElementById("stopBtn");
+
+const pauseBtn=
+document.getElementById("pauseBtn");
+
+const resumeBtn=
+document.getElementById("resumeBtn");
+
+const speed=
+document.getElementById("speed");
+
+const width=
+document.getElementById("width");
+
+const distance=
+document.getElementById("distance");
+
+const reverb=
+document.getElementById("reverb");
+
+const delay=
+document.getElementById("delay");
+
+const statusText=
+document.getElementById("status");
+
+const canvas=
+document.getElementById("visualizer");
+
+const c=
+canvas.getContext("2d");
+ /* ===========================
+   PART 2
+=========================== */
+
+speed.oninput=()=>{
+
+document.getElementById("speedValue").textContent=
+speed.value;
+
+};
+
+width.oninput=()=>{
+
+document.getElementById("widthValue").textContent=
+width.value+"%";
+
+};
+
+distance.oninput=()=>{
+
+document.getElementById("distanceValue").textContent=
+distance.value+"%";
+
+};
+
+reverb.oninput=()=>{
+
+document.getElementById("reverbValue").textContent=
+reverb.value+"%";
+
+};
+
+delay.oninput=()=>{
+
+document.getElementById("delayValue").textContent=
+delay.value+"%";
+
+};
+
+
+
+fileInput.onchange=async()=>{
+
+const file=fileInput.files[0];
+
+if(!file)return;
+
+const arr=await file.arrayBuffer();
+
+buffer=await ctx.decodeAudioData(arr);
+
+statusText.innerHTML="Audio Loaded ✓";
+
+};
+
+
+
+function createNodes(){
+
+gainNode=ctx.createGain();
+
+panNode=ctx.createStereoPanner();
+
+filterNode=ctx.createBiquadFilter();
+
+filterNode.type="lowpass";
+
+filterNode.frequency.value=18000;
+
+delayNode=ctx.createDelay(2);
+
+feedbackGain=ctx.createGain();
+
+feedbackGain.gain.value=.18;
+
+delayNode.connect(feedbackGain);
+
+feedbackGain.connect(delayNode);
+
+analyser=ctx.createAnalyser();
+
+analyser.fftSize=512;
+
+source.connect(filterNode);
+
+filterNode.connect(panNode);
+
+panNode.connect(gainNode);
+
+gainNode.connect(ctx.destination);
+
+gainNode.connect(delayNode);
+
+delayNode.connect(ctx.destination);
+
+gainNode.connect(analyser);
+
 }
+
+
+
+function playBuffer(offset=0){
+
+if(!buffer)return;
+
+source=ctx.createBufferSource();
+
+source.buffer=buffer;
+
+createNodes();
+
+startTime=ctx.currentTime-offset;
+
+source.start(0,offset);
+
+playing=true;
+
+paused=false;
+
+statusText.innerHTML="Playing";
+
+animate();
+
+source.onended=()=>{
+
+if(!paused){
+
+stopPlayback();
+
+}
+
+};
+
+}
+
+
+
+playBtn.onclick=async()=>{
+
+if(playing)return;
+
+if(ctx.state==="suspended")
+
+await ctx.resume();
+
+playBuffer();
+
+};
+
+
+
+pauseBtn.onclick=()=>{
+
+if(!playing)return;
+
+paused=true;
+
+pausedAt=ctx.currentTime-startTime;
+
+stopPlayback(false);
+
+statusText.innerHTML="Paused";
+
+};
+
+
+
+resumeBtn.onclick=()=>{
+
+if(!buffer)return;
+
+if(!paused)return;
+
+playBuffer(pausedAt);
+
+};
+
+
+
+stopBtn.onclick=()=>{
+
+paused=false;
+
+pausedAt=0;
+
+stopPlayback();
+
+statusText.innerHTML="Stopped";
+
+};
+
+
+
+function stopPlayback(reset=true){
+
+playing=false;
+
+cancelAnimationFrame(animation);
+
+try{
+
+source.stop();
+
+}catch(e){}
+
+try{
+
+source.disconnect();
+
+}catch(e){}
+
+if(reset){
+
+orbit=0;
+
+}
+
+}
+ /* ===========================
+   PART 3
+=========================== */
+
 function animate(){
- pan.pan.value=Math.sin((ctx.currentTime-start)*parseFloat(speed.value));
- raf=requestAnimationFrame(animate);
+
+    if(!playing) return;
+
+    orbit += 0.015 * parseFloat(speed.value);
+
+    const widthAmount =
+        parseFloat(width.value) / 100;
+
+    const distanceAmount =
+        parseFloat(distance.value) / 100;
+
+    const reverbAmount =
+        parseFloat(reverb.value) / 100;
+
+    const delayAmount =
+        parseFloat(delay.value) / 100;
+
+    // Smooth Left / Right
+
+    panNode.pan.value =
+        Math.sin(orbit) * widthAmount;
+
+    // Front / Back illusion
+
+    gainNode.gain.value =
+        1.0 -
+        (
+            (Math.cos(orbit)+1)/2
+        ) *
+        distanceAmount *
+        0.55;
+
+    filterNode.frequency.value =
+        4000 +
+        (
+            (Math.cos(orbit)+1)/2
+        ) *
+        14000;
+
+    feedbackGain.gain.value =
+        delayAmount * 0.45;
+
+    // Fake Reverb
+
+    gainNode.gain.value +=
+        Math.sin(orbit*2.2) *
+        reverbAmount *
+        0.08;
+
+    // Tiny Natural Movement
+
+    panNode.pan.value +=
+        Math.sin(orbit*3.8) *
+        0.05;
+
+    drawVisualizer();
+
+    animation =
+        requestAnimationFrame(
+            animate
+        );
+
 }
-function stopAudio(){
- if(src){try{src.stop()}catch(e){} src=null;}
- cancelAnimationFrame(raf);
+
+
+
+function drawVisualizer(){
+
+    const data =
+        new Uint8Array(
+            analyser.frequencyBinCount
+        );
+
+    analyser.getByteFrequencyData(data);
+
+    c.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    const w =
+        canvas.width /
+        data.length;
+
+    let x=0;
+
+    for(
+        let i=0;
+        i<data.length;
+        i++
+    ){
+
+        const h =
+            data[i] / 255 *
+            canvas.height;
+
+        c.fillStyle =
+            "rgb("+
+            (80+h)+","+
+            (180-h/2)+",255)";
+
+        c.fillRect(
+
+            x,
+
+            canvas.height-h,
+
+            w-1,
+
+            h
+
+        );
+
+        x += w;
+
+    }
+
 }
+
+
+
+drawVisualizer();
+
 </script>
+
 </body>
+
 </html>
